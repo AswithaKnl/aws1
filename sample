@@ -1,4 +1,7 @@
 Hi sample file
 this is new repository
+<<<<<<< HEAD
 hey sample file
 from git bash test2
+=======
+>>>>>>> parent of 9d6eae5 (second commit)
