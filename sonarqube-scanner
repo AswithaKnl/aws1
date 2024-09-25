@@ -9,6 +9,16 @@ pipeline {
                 checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/AswithaKnl/samplejavappforpractice.git']])
             }
         }
+        stage('DC check') {
+            steps {
+                dependencyCheck additionalArguments: '--format HTML', odcInstallation: 'DC-check'
+            }
+        }
+        stage('Trivy'){
+            steps {
+                sh 'trivy image bitnami/trivy:latest'
+            }
+        }
         stage('SonarQube Analysis') {
             steps {
                 // Ensure SonarQube Scanner is configured correctly
@@ -33,16 +43,6 @@ pipeline {
                 }
             }
         }
-        stage('Quality Gate Check') {
-            steps {
-                script {
-                    // Wait for the SonarQube analysis to finish and check the quality gate status
-                    timeout(time: 1, unit: 'HOURS') {
-                        waitForQualityGate abortPipeline: true
-                    }
-                }
-            }
-        }
-        // Additional stages can be added here (e.g., Build, Test, Deploy, etc.)
     }
+    
 }
