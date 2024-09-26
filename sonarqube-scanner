@@ -14,11 +14,6 @@ pipeline {
                 dependencyCheck additionalArguments: '--format HTML', odcInstallation: 'DC-check'
             }
         }
-        stage('Trivy'){
-            steps {
-                sh 'trivy image bitnami/trivy:latest'
-            }
-        }
         stage('SonarQube Analysis') {
             steps {
                 // Ensure SonarQube Scanner is configured correctly
