@@ -69,17 +69,5 @@ pipeline {
                 }
             }
         }
-        stage('Update Version in GitHub') {
-            steps {
-                script {
-                    // Commit the version change back to the GitHub repository
-                    sh "git config --global user.email 'aswithaknl@gmail.com'" // Set your email
-                    sh "git config --global user.name 'AswithaKnl'" // Set your username
-                    sh "git add sampleapp1"
-                    sh "git commit -m 'Update version to sampleapp1'"
-                    sh "git push"
-                }
-            }
-        }
     }
 }
