@@ -1,0 +1,85 @@
+pipeline {
+    agent any
+    tools {
+	maven "maven-3.9.8"
+    }
+    stages {
+        stage('clone repository') {
+            steps {
+                git 'https://github.com/AswithaKnl/samplejavappforpractice.git'
+            }
+        }
+        stage('DC check') {
+            steps {
+                dependencyCheck additionalArguments: '--format HTML', odcInstallation: 'DC-check'
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                // Ensure SonarQube Scanner is configured correctly
+                withSonarQubeEnv('SonarQube-Scanner') {
+                    script {
+                        // Define the path to SonarQube Scanner
+                        def scannerHome = tool name: 'SonarQube-Scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                        // Execute SonarQube Scanner with the necessary properties
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=sampleappjavapratice \
+                            -Dsonar.projectName="Sample Java Application for Practice" \
+                            -Dsonar.projectVersion=3.08 \
+                            -Dsonar.sources=src/main/java \
+                            -Dsonar.tests=src/test/java \
+                            -Dsonar.java.binaries=target/classes \
+                            -Dsonar.sourceEncoding=UTF-8 \
+                            -Dsonar.exclusions="**/test/**,**/generated/**" \
+                            -Dsonar.inclusions="**/*.java"
+                        """
+                    }
+                }
+            }
+        }
+        stage("quality gate"){
+           steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'SonarQube-Scanner'
+                }
+            }
+        }
+        stage('TRIVY FS SCAN') {
+            steps {
+                sh "trivy fs . > trivyfs.txt"
+            }
+        }
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
+                       sh "docker build -t sampleapp ."
+                       sh "docker tag sampleapp aswithakl/sampleapp:latest "
+                       sh "docker push aswithakl/sampleapp:latest "
+                    }
+                }
+            }
+        }
+        stage("Cleanup") {
+            steps {
+               script {
+                    sh "docker system prune -a -f"
+                   // You can also add additional cleanup commands as needed
+                }
+            }
+        }
+        stage('Update Version in GitHub') {
+            steps {
+                script {
+                    // Commit the version change back to the GitHub repository
+                    sh "git config --global user.email 'aswithaknl@gmail.com'" // Set your email
+                    sh "git config --global user.name 'AswithaKnl'" // Set your username
+                    sh "git add sampleapp1"
+                    sh "git commit -m 'Update version to sampleapp1'"
+                    sh "git push"
+                }
+            }
+        }
+    }
+}
